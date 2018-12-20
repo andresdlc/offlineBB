@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema targetNamespace="http://www.bolivariano.com/ModuloComercios" elementFormDefault="unqualified" xmlns="http://www.w3.org/2001/XMLSchema" xmlns:tns="http://www.bolivariano.com/ModuloComercios">
+  <element name="ModuloComercio" type="tns:tramaComercio"/>
+  <complexType name="tramaComercio">
+    <sequence>
+      <element name="Fend_Codigo_Trx" minOccurs="1" maxOccurs="1" type="tns:codigoTrx">
+        <annotation>
+          <documentation>0415 Transferencia cuenta corriente (crédito).
+						0515 Transferencia cuenta ahorros (crédito).
+						0430 Transferencia cuenta corriente (débito).
+						0530 Transferencia cuenta ahorros (débito).
+						0475 Consulta de saldos cuenta corriente.
+						0575 Consulta de saldos cuenta ahorros.
+						0375 Consulta de saldos cuenta virtual.
+						0180 Bloqueo de tarjeta.</documentation>
+        </annotation>
+      </element>
+      <element name="Fend_Tipo_Trx" minOccurs="1" maxOccurs="1" type="tns:tipoTrx">
+        <annotation>
+          <documentation>O: Original
+						R: Reverso</documentation>
+        </annotation>
+      </element>
+      <element name="Fend_Tarjeta" minOccurs="1" maxOccurs="1" type="tns:char20">
+        <annotation>
+          <documentation>Numero de tarjeta</documentation>
+        </annotation>
+      </element>
+      <element name="Fend_Cuenta" minOccurs="1" maxOccurs="1" type="tns:char24">
+        <annotation>
+          <documentation>Numero de cuenta relacionada con la transaccion</documentation>
+        </annotation>
+      </element>
+      <element name="Fend_Error" minOccurs="1" maxOccurs="1" type="tns:char04">
+        <annotation>
+          <documentation>Código de error que indica el éxito o no de la
+						transacción</documentation>
+        </annotation>
+      </element>
+      <element name="Fend_Error_Real" minOccurs="1" maxOccurs="1" type="tns:char06">
+        <annotation>
+          <documentation>Código de error Sybase que indica el éxito o no de
+						la transacción.</documentation>
+        </annotation>
+      </element>
+      <element name="Fend_Moneda" minOccurs="1" maxOccurs="1" type="tns:char03">
+        <annotation>
+          <documentation>Tipo de moneda utilizada en la transacción.</documentation>
+        </annotation>
+      </element>
+      <element name="Fend_Monto" minOccurs="1" maxOccurs="1" type="tns:char17">
+        <annotation>
+          <documentation>Monto de transacción</documentation>
+        </annotation>
+      </element>
+      <element name="Fend_Comision" minOccurs="1" maxOccurs="1" type="tns:char17">
+        <annotation>
+          <documentation>Comisión generada.</documentation>
+        </annotation>
+      </element>
+      <element name="Fend_Referencia" minOccurs="1" maxOccurs="1" type="tns:char40">
+        <annotation>
+          <documentation>Referencia 1, campo que puede contener información
+						general.</documentation>
+        </annotation>
+      </element>
+      <element name="Fend_Clave" minOccurs="1" maxOccurs="1" type="tns:char16">
+        <annotation>
+          <documentation>Clave encriptada.</documentation>
+        </annotation>
+      </element>
+      <element name="Fend_Terminal" minOccurs="1" maxOccurs="1" type="tns:char05">
+        <annotation>
+          <documentation>Número de terminal.</documentation>
+        </annotation>
+      </element>
+      <element name="Fend_Operador" minOccurs="1" maxOccurs="1" type="tns:char08">
+        <annotation>
+          <documentation>Código de autorización devuelto por proveedor.</documentation>
+        </annotation>
+      </element>
+      <element name="Fend_Aba_Emisor" minOccurs="1" maxOccurs="1" type="tns:char10">
+        <annotation>
+          <documentation>Aba de banco emisor de tarjeta.</documentation>
+        </annotation>
+      </element>
+      <element name="Fend_Codigo_Servicio" minOccurs="1" maxOccurs="1" type="tns:char03">
+        <annotation>
+          <documentation>Código de servicio involucrado con la transacción
+						(luz, agua, tiempo aire, etc.)</documentation>
+        </annotation>
+      </element>
+      <element name="Fend_Origen_Trx" minOccurs="1" maxOccurs="1" type="tns:char03">
+        <annotation>
+          <documentation>Código de local en donde se origina la transacción</documentation>
+        </annotation>
+      </element>
+      <element name="Fend_Secuencia" minOccurs="1" maxOccurs="1" type="tns:char03">
+        <annotation>
+          <documentation>Secuencia de transacción.</documentation>
+        </annotation>
+      </element>
+      <element name="Fend_Tipo_Proceso" minOccurs="1" maxOccurs="1" type="tns:tipoProceso">
+        <annotation>
+          <documentation>C: Cuenta (consultas y transferencias).T: Tarjeta
+						(bloqueo de tarjeta).</documentation>
+        </annotation>
+      </element>
+      <element name="Fend_Pista2" minOccurs="1" maxOccurs="1" type="tns:char40">
+        <annotation>
+          <documentation>Pista 2 de banda magnética.</documentation>
+        </annotation>
+      </element>
+      <element name="Fend_Pista3" minOccurs="1" maxOccurs="1" type="tns:char110">
+        <annotation>
+          <documentation>Pista 3 de banda magnética.</documentation>
+        </annotation>
+      </element>
+      <element name="Fend_Referencia_2" minOccurs="1" maxOccurs="1" type="tns:char40">
+        <annotation>
+          <documentation>Referencia 2, se devuelve el saldo total para las
+						consultas y transferencias.</documentation>
+        </annotation>
+      </element>
+      <element name="Fend_Referencia_3" minOccurs="1" maxOccurs="1" type="tns:char40">
+        <annotation>
+          <documentation>Referencia 3, se devuelve el saldo disponible para
+						las consultas y transferencias.</documentation>
+        </annotation>
+      </element>
+      <element name="Fend_Referencia_4" minOccurs="1" maxOccurs="1" type="tns:char40">
+        <annotation>
+          <documentation>Referencia 4, campo que puede contener información
+						general.</documentation>
+        </annotation>
+      </element>
+      <element name="Fend_Referencia_5" minOccurs="1" maxOccurs="1" type="tns:char40">
+        <annotation>
+          <documentation>Referencia 5, campo que puede contener información
+						general.</documentation>
+        </annotation>
+      </element>
+      <element name="Fend_Monto_2" minOccurs="1" maxOccurs="1" type="tns:char17">
+        <annotation>
+          <documentation>Monto 2 de transacción.</documentation>
+        </annotation>
+      </element>
+      <element name="Fend_Fecha" minOccurs="1" maxOccurs="1" type="tns:char08">
+        <annotation>
+          <documentation>Fecha contable de transacción.</documentation>
+        </annotation>
+      </element>
+    </sequence>
+  </complexType>
+  <simpleType name="tipoProceso">
+    <restriction base="string">
+      <enumeration value="C"/>
+      <enumeration value="T"/>
+    </restriction>
+  </simpleType>
+  <simpleType name="char03">
+    <restriction base="string">
+      <length value="3"/>
+    </restriction>
+  </simpleType>
+  <simpleType name="char04">
+    <restriction base="string">
+      <length value="4"/>
+    </restriction>
+  </simpleType>
+  <simpleType name="char05">
+    <restriction base="string">
+      <length value="5"/>
+    </restriction>
+  </simpleType>
+  <simpleType name="char06">
+    <restriction base="string">
+      <length value="6"/>
+    </restriction>
+  </simpleType>
+  <simpleType name="char08">
+    <restriction base="string">
+      <length value="8"/>
+    </restriction>
+  </simpleType>
+  <simpleType name="char10">
+    <restriction base="string">
+      <length value="10"/>
+    </restriction>
+  </simpleType>
+  <simpleType name="char16">
+    <restriction base="string">
+      <length value="16"/>
+    </restriction>
+  </simpleType>
+  <simpleType name="char17">
+    <restriction base="string">
+      <length value="17"/>
+    </restriction>
+  </simpleType>
+  <simpleType name="char20">
+    <restriction base="string">
+      <length value="20"/>
+    </restriction>
+  </simpleType>
+  <simpleType name="char24">
+    <restriction base="string">
+      <length value="24"/>
+    </restriction>
+  </simpleType>
+  <simpleType name="char40">
+    <restriction base="string">
+      <length value="40"/>
+    </restriction>
+  </simpleType>
+  <simpleType name="char110">
+    <restriction base="string">
+      <length value="110"/>
+    </restriction>
+  </simpleType>
+  <simpleType name="codigoTrx">
+    <restriction base="string">
+      <enumeration value="0415"/>
+      <enumeration value="0515"/>
+      <enumeration value="0430"/>
+      <enumeration value="0530"/>
+      <enumeration value="0475"/>
+      <enumeration value="0575"/>
+      <enumeration value="0375"/>
+      <enumeration value="0180"/>
+    </restriction>
+  </simpleType>
+  <simpleType name="tipoTrx">
+    <restriction base="string">
+      <enumeration value="O"/>
+      <enumeration value="R"/>
+    </restriction>
+  </simpleType>
+</schema>

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<WL5G3N0:definitions name="ModuloComercios" targetNamespace="http://www.bolivariano.com/ModuloComercios/" xmlns:WL5G3N0="http://schemas.xmlsoap.org/wsdl/" xmlns:WL5G3N1="http://www.bolivariano.com/ModuloComercios" xmlns:WL5G3N2="http://www.bolivariano.com/ModuloComercios/" xmlns:WL5G3N3="http://schemas.xmlsoap.org/wsdl/soap/">
+  <WL5G3N0:types>
+    <xsd:schema xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:tns="http://www.bolivariano.com/ModuloComercios/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsd1="http://www.bolivariano.com/ModuloComercios">
+      <xsd:import namespace="http://www.bolivariano.com/ModuloComercios" schemaLocation="comercios.xsd"/>
+    </xsd:schema>
+  </WL5G3N0:types>
+  <WL5G3N0:message name="processRequest">
+    <WL5G3N0:part element="WL5G3N1:ModuloComercio" name="parameters"/>
+  </WL5G3N0:message>
+  <WL5G3N0:message name="processResponse">
+    <WL5G3N0:part element="WL5G3N1:ModuloComercio" name="parameters"/>
+  </WL5G3N0:message>
+  <WL5G3N0:portType name="ModuloComercios">
+    <WL5G3N0:operation name="process">
+      <WL5G3N0:input message="WL5G3N2:processRequest"/>
+      <WL5G3N0:output message="WL5G3N2:processResponse"/>
+    </WL5G3N0:operation>
+  </WL5G3N0:portType>
+  <WL5G3N0:binding name="ModuloComerciosSOAP" type="WL5G3N2:ModuloComercios">
+    <WL5G3N3:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+    <WL5G3N0:operation name="process">
+      <WL5G3N3:operation soapAction="http://www.bolivariano.com/ModuloComercios/process"/>
+      <WL5G3N0:input>
+        <WL5G3N3:body use="literal"/>
+      </WL5G3N0:input>
+      <WL5G3N0:output>
+        <WL5G3N3:body use="literal"/>
+      </WL5G3N0:output>
+    </WL5G3N0:operation>
+  </WL5G3N0:binding>
+  <WL5G3N0:service name="ModuloComercios">
+    <WL5G3N0:port binding="WL5G3N2:ModuloComerciosSOAP" name="ModuloComerciosSOAP">
+      <WL5G3N3:address location="https://soavides.bolivariano.fin.ec:5554/ATMComercios/proxy/comercios"/>
+    </WL5G3N0:port>
+  </WL5G3N0:service>
+</WL5G3N0:definitions>

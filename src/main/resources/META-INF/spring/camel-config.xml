@@ -1,0 +1,287 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:camel="http://camel.apache.org/schema/spring"
+    xmlns:camel2="http://camel.apache.org/schema/blueprint"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:cxf="http://camel.apache.org/schema/cxf"
+    xmlns:cxf2="http://cxf.apache.org/core"
+    xmlns:cxfcore="http://cxf.apache.org/core"
+    xmlns:http="http://cxf.apache.org/transports/http/configuration"
+    xmlns:httpj="http://cxf.apache.org/transports/http-jetty/configuration"
+    xmlns:sec="http://cxf.apache.org/configuration/security"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://cxf.apache.org/transports/http/configuration   http://cxf.apache.org/schemas/configuration/http-conf.xsd    http://cxf.apache.org/transports/http-jetty/configuration         http://cxf.apache.org/schemas/configuration/http-jetty.xsd         http://cxf.apache.org/core http://cxf.apache.org/schemas/core.xsd         http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd         http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd         http://camel.apache.org/schema/cxf http://camel.apache.org/schema/cxf/camel-cxf.xsd">
+    <bean class="bolivariano.esquema.offline.BodyProcessor" id="bodyProcessor"/>
+    <bean class="bolivariano.esquema.offline.EndProcessor" id="endProcessor"/>
+    <bean class="bolivariano.esquema.offline.ValidarProcessor" id="ValidarProcessor"/>
+    <bean class="bolivariano.esquema.offline.ActualizarProcessor" id="ActualizarProcessor"/>
+    <context:property-placeholder location="file:../conf/offline.properties,file:../../common/uris.properties,file:../../common/common.properties"/>
+    <!-- <context:property-placeholder location="file:P:\microservice\OFFLINE\offline\conf\offline.properties,file:P:\microservice\OFFLINE\common\uris.properties,file:P:\microservice\OFFLINE\common\common.properties"/>-->
+    <bean class="org.apache.camel.component.jms.JmsComponent" id="wmq">
+        <property name="connectionFactory">
+            <bean class="com.ibm.mq.jms.MQConnectionFactory">
+                <property name="transportType" value="1"/>
+                <property name="hostName" value="${mq.host}"/>
+                <property name="channel" value="${mq.channel}"/>
+                <property name="port" value="${mq.port}"/>
+                <property name="queueManager" value="${mq.queueManager}"/>
+            </bean>
+        </property>
+    </bean>
+    <cxf:cxfEndpoint
+        address="${proxy.protocol}://${proxy.server}:${proxy.port}${uri.off.pagoTarjeta}"
+        id="pagoTarjeta"
+        wsdlURL="${wsdl.directory}/ModeloNegocioCash/TarjetaCashSinSeg.wsdl" xmlns:s="http://www.bolivariano.com/CashManagement/ws/TarjetaCash"/>
+    <cxf:cxfEndpoint
+        address="${proxy.protocol}://${proxy.server}:${proxy.port}${uri.off.transferencia}"
+        id="transferencia"
+        wsdlURL="${wsdl.directory}/ModeloNegocioCash/TransferenciasSinSeg.wsdl" xmlns:s="http://www.bolivariano.com/ws/Transferencias/"/>
+    <cxf:cxfEndpoint
+        address="${proxy.protocol}://${proxy.server}:${proxy.port}${uri.off.consultasCuentas}"
+        id="consultasCuentas"
+        wsdlURL="${wsdl.directory}/ModeloNegocioCash/ConsultasCuentasSinSeg.wsdl" xmlns:s="http://www.bolivariano.com/CashManagement/ws/ConsultasCuenta/"/>
+    <camelContext id="camelContext-b80260e4-37e3-4839-9e17-9dffe7a70278" xmlns="http://camel.apache.org/schema/spring">
+        <propertyPlaceholder id="properties" location="file:../conf/offline.properties"/>
+        <!-- <propertyPlaceholder id="properties" location="file:P:\microservice\OFFLINE\offline\conf\offline.properties"/>-->
+        <endpoint id="callPagoTarjeta" uri="${real.protocol}://${real.server}:${real.port}${uri.bus.pagoTarjeta}"/>
+        <endpoint id="callTransferencia" uri="${real.protocol}://${real.server}:${real.port}${uri.bus.transferencia}"/>
+        <endpoint id="callConsultasCuentas" uri="${real.protocol}://${real.server}:${real.port}${uri.bus.consultasCuentas}"/>
+        <route id="_routeTarjetaCredito" streamCache="true">
+            <!-- CXF consumer using MESSAGE format -->
+            <from id="_from1" uri="cxf:bean:pagoTarjeta?dataFormat=PAYLOAD"/>
+            <process id="_process1" ref="bodyProcessor"/>
+            <process id="_processValidarSaldo" ref="ValidarProcessor"/>
+            <log id="_log1" message="op-----> ${in.headers.operationName}"/>
+            <log id="_log2" loggingLevel="DEBUG" message="${in.header.X-Request-Id} ${in.header.modoArbitro} ENTRADA-----> ${body}"/>
+            <choice id="_choiceTCOffline1">
+                <when id="_whenTC1Offline">
+                    <simple>${in.headers.offlineAllow} == true and ${in.headers.SaldoDisponible} == true</simple>
+                    <choice id="_choiceTCOperacion2">
+                        <when id="_whenCOperacion2">
+                            <simple>${in.headers.operationName} == "pagarTarjetaCredito"</simple>
+                            <log id="_logTC10" loggingLevel="WARN" message="${in.header.X-Request-Id} ${in.header.modoArbitro} ${in.headers.ErrorActualizarSaldo}ACTUALIZARSALDO"/>
+                            <process id="_processActualizarSaldo" ref="ActualizarProcessor"/>
+                            <choice id="_choiceTCMQ3">
+                                <when id="_whenTCMQ3">
+                                    <simple>${in.headers.ErrorActualizarSaldo} == "true"</simple>
+                                    <setHeader headerName="OffHttpUri" id="_setHeader1">
+                                    <simple>/TarjetaCash/proxy/TarjetaCashSinSeg</simple>
+                                    </setHeader>
+                                    <log id="_logTC3"
+                                    loggingLevel="WARN" message="${in.header.X-Request-Id} ${in.header.modoArbitro} MENSAJE ENVIADO A COLA"/>
+                                    <to id="_to2" pattern="InOnly" uri="wmq:queue:OFFLINE_REQ"/>
+                                    <to id="_to_tarjeta1" uri="xslt:xsl/tarjeta.xsl"/>
+                                    <setHeader headerName="Request-Id" id="_setHeaderTCMQOK1">
+                                    <simple>${in.header.X-Request-Id}</simple>
+                                    </setHeader>
+                                </when>
+                                <otherwise id="_otherwiseTCMQ1">
+                                    <setBody id="_setBodyTCerror1">
+                                    <constant>
+&lt;men:MensajeSalidaPagarTarjetaCredito xmlns:men="http://www.bolivariano.com/CashManagement/MensajesTarjetaCash"&gt;
+&lt;codigoError&gt;99&lt;/codigoError&gt;&lt;codigoErrorRemoto&gt;99&lt;/codigoErrorRemoto&gt;&lt;mensajeSistema&gt;Transaccion no procesada&lt;/mensajeSistema&gt;
+&lt;mensajeUsuario&gt;Transaccion no procesada&lt;/mensajeUsuario&gt;&lt;offline&gt;S&lt;/offline&gt;
+&lt;/men:MensajeSalidaPagarTarjetaCredito&gt;</constant>
+                                    </setBody>
+                                    <setHeader headerName="Request-Id" id="_setHeaderTCError1">
+                                    <simple>${in.header.X-Request-Id}</simple>
+                                    </setHeader>
+                                </otherwise>
+                            </choice>
+                        </when>
+                        <otherwise id="_otherwiseTCOperacion1">
+                            <log id="_log4" loggingLevel="WARN" message="${in.header.X-Request-Id} ${in.header.modoArbitro} MENSAJE ENVIADO A BUS"/>
+                            <removeHeaders id="_removeHeaders1" pattern="CamelHttp*"/>
+                            <to id="_to3" pattern="InOut" ref="callPagoTarjeta"/>
+                            <camel:setBody id="_setBody2">
+                                <xpath>//*[local-name()='Body']/*</xpath>
+                            </camel:setBody>
+                            <log id="_log5" loggingLevel="DEBUG" message="${in.header.X-Request-Id} ${in.header.modoArbitro} SALIDA-----> ${body}"/>
+                            <camel:setHeader headerName="Request-Id" id="_setHeader2">
+                                <simple>${in.header.X-Request-Id}</simple>
+                            </camel:setHeader>
+                        </otherwise>
+                    </choice>
+                </when>
+                <when id="_when1">
+                    <simple>${in.headers.offlineAllow} == true and ${in.headers.SaldoDisponible} == false</simple>
+                    <camel:setBody id="_setBody4">
+                        <camel:constant>	
+							&lt;men:MensajeSalidaPagarTarjetaCredito
+								xmlns:men="http://www.bolivariano.com/CashManagement/MensajesTarjetaCash" &gt;
+								 &lt;codigoError&gt;99&lt;/codigoError&gt;
+         &lt;codigoErrorRemoto&gt;99&lt;/codigoErrorRemoto&gt;
+         &lt;mensajeSistema&gt;El saldo es insuficiente para realizar esta transaccion&lt;/mensajeSistema&gt;
+         &lt;mensajeUsuario&gt;El saldo es insuficiente para realizar esta transaccion&lt;/mensajeUsuario&gt;
+							&lt;/men:MensajeSalidaPagarTarjetaCredito&gt; </camel:constant>
+                    </camel:setBody>
+                    <camel:setHeader headerName="Request-Id" id="_setHeader4">
+                        <simple>${in.header.X-Request-Id}</simple>
+                    </camel:setHeader>
+                </when>
+                <otherwise id="_otherwise2">
+                    <camel:setBody id="_setBody3">
+                        <camel:constant>	
+							&lt;men:MensajeSalidaPagarTarjetaCredito
+								xmlns:men="http://www.bolivariano.com/CashManagement/MensajesTarjetaCash" &gt;
+								 &lt;codigoError&gt;99&lt;/codigoError&gt;
+         &lt;codigoErrorRemoto&gt;99&lt;/codigoErrorRemoto&gt;
+         &lt;mensajeSistema&gt;Transaccion no permitida en OFFLINE&lt;/mensajeSistema&gt;
+         &lt;mensajeUsuario&gt;Transaccion no permitida en OFFLINE&lt;/mensajeUsuario&gt;
+							&lt;/men:MensajeSalidaPagarTarjetaCredito&gt; </camel:constant>
+                    </camel:setBody>
+                    <camel:setHeader headerName="Request-Id" id="_setHeader3">
+                        <simple>${in.header.X-Request-Id}</simple>
+                    </camel:setHeader>
+                </otherwise>
+            </choice>
+        </route>
+        <route id="_routeTransf1" streamCache="true">
+            <from id="_fromTransf1" uri="cxf:bean:transferencia?dataFormat=PAYLOAD"/>
+            <process id="_processTransf1" ref="bodyProcessor"/>
+            <process id="_processValidarSaldo1" ref="ValidarProcessor"/>
+            <log id="_logTransf1" message="op-----> ${in.headers.operationName}"/>
+            <log id="_logTransf2" loggingLevel="DEBUG" message="${in.header.X-Request-Id} ${in.header.modoArbitro} ENTRADA-----> ${body}"/>
+            <choice id="_choiceTransf1">
+                <when id="_whenTransf1">
+                    <simple>${in.headers.offlineAllow} == true and ${in.headers.SaldoDisponible} == true</simple>
+                    <choice id="_choiceTransf2">
+                        <when id="_whenTransf2">
+                            <simple>${in.headers.operationName} == "ejecutarTransferencia"</simple>
+                            <log id="_logTransf10" loggingLevel="WARN" message="${in.header.X-Request-Id} ${in.header.modoArbitro} ${in.headers.ErrorActualizarSaldo}ACTUALIZARSALDO"/>
+                            <process id="_processActualizarSaldoT" ref="ActualizarProcessor"/>
+                            <choice id="_choiceTransfMQ3">
+                                <when id="_whenTransfMQ3">
+                                    <simple>${in.headers.ErrorActualizarSaldo} == "true"</simple>
+                                    <setHeader headerName="OffHttpUri" id="_setHeader5">
+                                    <simple>/Transferencia/proxy/TransferenciasSinSeg</simple>
+                                    </setHeader>
+                                    <to id="_toTransf2" pattern="InOnly" uri="wmq:queue:OFFLINE_REQ"/>
+                                    <log id="_logTransf3"
+                                    loggingLevel="WARN" message="${in.header.X-Request-Id} ${in.header.modoArbitro} MENSAJE ENVIADO A COLA"/>
+                                    <to id="_toTransf1" uri="xslt:xsl/transferencia.xsl"/>
+                                    <setHeader headerName="Request-Id" id="_setHeaderTransf1">
+                                    <simple>${in.header.X-Request-Id}</simple>
+                                    </setHeader>
+                                </when>
+                                <otherwise id="_otherwiseTransfMQ1">
+                                    <setBody id="_setBodyTransf10">
+                                    <constant>	
+							&lt;men:mensajeSalidaEjecutarTransferencia xmlns:men="http://www.bolivariano.com/CashManagement/MensajeTransferencias"&gt;
+        &lt;codigoError&gt;99&lt;/codigoError&gt;
+         &lt;codigoErrorRemoto&gt;99&lt;/codigoErrorRemoto&gt;
+         &lt;mensajeSistema&gt;Transaccion no procesada&lt;/mensajeSistema&gt;
+         &lt;mensajeUsuario&gt;Transaccion no procesada&lt;/mensajeUsuario&gt;
+      &lt;/men:mensajeSalidaEjecutarTransferencia&gt;</constant>
+                                    </setBody>
+                                    <setHeader headerName="Request-Id" id="_setHeaderTransf11">
+                                    <simple>${in.header.X-Request-Id}</simple>
+                                    </setHeader>
+                                </otherwise>
+                            </choice>
+                        </when>
+                        <otherwise id="_otherwiseTransf1">
+                            <log id="_logTransf4" loggingLevel="WARN" message="${in.header.X-Request-Id} ${in.header.modoArbitro} MENSAJE ENVIADO A BUS"/>
+                            <removeHeaders id="_removeHeadersTransf1" pattern="CamelHttp*"/>
+                            <to id="_toTransf3" pattern="InOut" ref="callTransferencia"/>
+                            <camel:setBody id="_setBodyTransf2">
+                                <xpath>//*[local-name()='Body']/*</xpath>
+                            </camel:setBody>
+                            <log id="_logTransf5" loggingLevel="DEBUG" message="${in.header.X-Request-Id} ${in.header.modoArbitro} SALIDA-----> ${body}"/>
+                            <camel:setHeader headerName="Request-Id" id="_setHeaderTransf2">
+                                <simple>${in.header.X-Request-Id}</simple>
+                            </camel:setHeader>
+                        </otherwise>
+                    </choice>
+                </when>
+                <when id="_whentransf1">
+                    <simple>
+    	    			${in.headers.offlineAllow} == true and ${in.headers.SaldoDisponible} == false
+    		  		</simple>
+                    <camel:setBody id="_setBodyTransf4">
+                        <camel:constant>&lt;men:mensajeSalidaEjecutarTransferencia xmlns:men="http://www.bolivariano.com/CashManagement/MensajeTransferencias"&gt;
+   &lt;codigoError&gt;99&lt;/codigoError&gt;
+   &lt;codigoErrorRemoto&gt;99&lt;/codigoErrorRemoto&gt;
+   &lt;mensajeSistema&gt;El saldo es insuficiente para realizar esta transaccion&lt;/mensajeSistema&gt;
+   &lt;mensajeUsuario&gt;El saldo es insuficiente para realizar esta transaccion&lt;/mensajeUsuario&gt;
+&lt;/men:mensajeSalidaEjecutarTransferencia&gt;</camel:constant>
+                    </camel:setBody>
+                    <camel:setHeader headerName="Request-Id" id="_setHeaderTransf4">
+                        <simple>${in.header.X-Request-Id}</simple>
+                    </camel:setHeader>
+                </when>
+                <otherwise id="_otherwiseTransf2">
+                    <camel:setBody id="_setBodyTransf3">
+                        <camel:constant>	
+							&lt;men:mensajeSalidaEjecutarTransferencia xmlns:men="http://www.bolivariano.com/CashManagement/MensajeTransferencias"&gt;
+        &lt;codigoError&gt;99&lt;/codigoError&gt;
+         &lt;codigoErrorRemoto&gt;99&lt;/codigoErrorRemoto&gt;
+         &lt;mensajeSistema&gt;Transaccion no permitida en OFFLINE&lt;/mensajeSistema&gt;
+         &lt;mensajeUsuario&gt;Transaccion no permitida en OFFLINE&lt;/mensajeUsuario&gt;
+      &lt;/men:mensajeSalidaEjecutarTransferencia&gt; </camel:constant>
+                    </camel:setBody>
+                    <camel:setHeader headerName="Request-Id" id="_setHeaderTransf3">
+                        <simple>${in.header.X-Request-Id}</simple>
+                    </camel:setHeader>
+                </otherwise>
+            </choice>
+        </route>
+        <!-- Flujo de detalle de consulta de cuentas -->
+        <route id="_routeConsultaSaldo" streamCache="true">
+            <from id="_fromConsultaSaldo" uri="cxf:bean:consultasCuentas?dataFormat=PAYLOAD"/>
+            <process id="_processConsultaSaldo" ref="bodyProcessor"/>
+            <log id="_logConsultaSaldo1" message="op-----> ${in.headers.operationName}"/>
+            <log id="_logConsultaSaldo2" loggingLevel="DEBUG" message="${in.header.X-Request-Id} ${in.header.modoArbitro} ENTRADA-----> ${body}"/>
+            <choice id="_choiceConsultaSaldo1">
+                <when id="_whenConsultaSaldo1">
+                    <simple>${in.headers.offlineAllow} == true</simple>
+                    <choice id="_choiceConsultaSaldo2">
+                        <when id="_whenConsultaSaldo2">
+                            <simple>${in.headers.operationName} == "obtenerDetalleCuenta"</simple>
+                            <log id="_logConsultaSaldo3"
+                                loggingLevel="WARN" message="${in.header.X-Request-Id} ${in.header.modoArbitro} MENSAJE ENVIADO A BUS"/>
+                            <removeHeaders
+                                id="_removeHeadersConsultaSaldo8" pattern="CamelHttp*"/>
+                            <to id="_to3ConsultaSaldo1" pattern="InOut" ref="callConsultasCuentas"/>
+                            <camel:setBody id="_setBodyConsultaSaldo2">
+                                <xpath>//*[local-name()='Body']/*</xpath>
+                            </camel:setBody>
+                            <log id="_logConsultaSaldo4"
+                                loggingLevel="DEBUG" message="${in.header.X-Request-Id} ${in.header.modoArbitro} SALIDA-----> ${body}"/>
+                            <process id="_processSalidaConsultaSaldo" ref="endProcessor"/>
+                            <camel:setHeader headerName="Request-Id" id="_setHeaderConsultaSaldo1">
+                                <simple>${in.header.X-Request-Id}</simple>
+                            </camel:setHeader>
+                        </when>
+                        <otherwise id="_otherwiseConsultaSaldo1">
+                            <log id="_logConsultaSaldo5"
+                                loggingLevel="WARN" message="${in.header.X-Request-Id} ${in.header.modoArbitro} MENSAJE ENVIADO A BUS"/>
+                            <removeHeaders
+                                id="_removeHeadersConsultaSaldo9" pattern="CamelHttp*"/>
+                            <to id="_toConsultaSaldo2" pattern="InOut" ref="callConsultasCuentas"/>
+                            <camel:setBody id="_setBodyConsultaSaldo3">
+                                <xpath>//*[local-name()='Body']/*</xpath>
+                            </camel:setBody>
+                            <log id="_logConsultaSaldo6"
+                                loggingLevel="DEBUG" message="${in.header.X-Request-Id} ${in.header.modoArbitro} SALIDA-----> ${body}"/>
+                            <camel:setHeader headerName="Request-Id" id="_setHeaderConsultaSaldo2">
+                                <simple>${in.header.X-Request-Id}</simple>
+                            </camel:setHeader>
+                        </otherwise>
+                    </choice>
+                </when>
+                <otherwise id="_otherwiseConsultaSaldo8">
+                    <log id="_logConsultaSaldo7" loggingLevel="WARN" message="${in.header.X-Request-Id} ${in.header.modoArbitro} MENSAJE ENVIADO A BUS"/>
+                    <removeHeaders id="_removeHeadersConsultaSaldo7" pattern="CamelHttp*"/>
+                    <to id="_toConsultaSaldo7" pattern="InOut" ref="callConsultasCuentas"/>
+                    <camel:setBody id="_setBodyConsultaSaldo6">
+                        <xpath>//*[local-name()='Body']/*</xpath>
+                    </camel:setBody>
+                    <log id="_logConsultaSaldo8" loggingLevel="DEBUG" message="${in.header.X-Request-Id} ${in.header.modoArbitro} SALIDA-----> ${body}"/>
+                    <camel:setHeader headerName="Request-Id" id="_setHeaderConsultaSaldo3">
+                        <simple>${in.header.X-Request-Id}</simple>
+                    </camel:setHeader>
+                </otherwise>
+            </choice>
+        </route>
+    </camelContext>
+</beans>
